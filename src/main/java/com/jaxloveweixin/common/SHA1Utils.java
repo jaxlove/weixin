@@ -1,13 +1,14 @@
 package com.jaxloveweixin.common;
 
 import java.security.MessageDigest;
+import java.util.Arrays;
 
 /**
  * @author wangdejun
- * @description: TODO description
+ * @description: SHA1加密工具
  * @date 2019/11/16 15:11
  */
-public class SecuritySHA1Utils {
+public class SHA1Utils {
 
     /**
      * @Comment SHA1实现
@@ -39,8 +40,15 @@ public class SecuritySHA1Utils {
     }
 
     public static void main(String args[]) throws Exception {
-        String str = new String("amigoxiexiexingxing");
-        System.out.println("原始：" + str);
-        System.out.println("SHA后：" + shaEncode(str));
+        //1.定义数组存放tooken，timestamp,nonce
+        String[] arr = {"wdjToken", "1573889502", "908380817"};
+        //2.对数组进行排序
+        Arrays.sort(arr);
+        //3.生成字符串
+        StringBuffer sb = new StringBuffer();
+        for (String s : arr) {
+            sb.append(s);
+        }
+        System.out.println("SHA后：" + shaEncode(sb.toString()));//201116de3168eee1c3f25533522f141db44bb2b2
     }
 }

@@ -1,11 +1,10 @@
 package com.jaxloveweixin.entity.frommessage;
 
 import com.google.gson.Gson;
-import org.springframework.boot.json.GsonJsonParser;
 
 /**
  * @author wangdejun
- * @description: TODO description
+ * @description: 微信验证实体类
  * @date 2019/11/16 15:27
  */
 public class CheckMessage {
