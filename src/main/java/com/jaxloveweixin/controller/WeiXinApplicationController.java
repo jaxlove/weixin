@@ -2,6 +2,8 @@ package com.jaxloveweixin.controller;
 
 import com.jaxloveweixin.common.Constant;
 import com.jaxloveweixin.common.MessageUtil;
+import com.jaxloveweixin.entity.frommessage.CheckMessage;
+import com.jaxloveweixin.entity.frommessage.WeiXinCheck;
 import com.jaxloveweixin.entity.tomessage.Article;
 import com.jaxloveweixin.entity.tomessage.NewsMessage;
 import com.jaxloveweixin.entity.tomessage.TextMessage;
@@ -17,96 +19,73 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * description
+ * description 接收weixin的接口，俩个地址相同，一个get用于验证，一个post用于接收用户信息
  *
  * @author wdj on 2018/7/28
  */
 @Controller
-public class WeiXinApplicationController extends BaseController{
+public class WeiXinApplicationController extends BaseController {
 
     @ResponseBody
     @GetMapping("weixin/getToken")
-    public String getToken(HttpServletRequest request){
-        System.out.println(request.getParameter("signature"));
-        System.out.println(request.getParameter("timestamp"));
-        System.out.println(request.getParameter("nonce"));
-        System.out.println(request.getParameter("echostr"));
-        return request.getParameter("echostr");
+    public String getToken(CheckMessage checkMessage) {
+        boolean checkSignature = WeiXinCheck.checkSignature(checkMessage);
+        if (checkSignature) {
+            return checkMessage.getEchostr();
+        }else {
+            return "error";
+        }
     }
 
     @ResponseBody
     @PostMapping("weixin/getToken")
-    public Object getToken1(HttpServletRequest request) throws Exception{
+    public Object postToken(HttpServletRequest request) throws Exception {
         //从集合中，获取XML各个节点的内容
         Map<String, String> map = MessageUtil.parseXml(request);
-
         String ToUserName = map.get("ToUserName");
-
         String FromUserName = map.get("FromUserName");
-
         String CreateTime = map.get("CreateTime");
-
         String MsgType = map.get("MsgType");
-
         String Content = map.get("Content");
-
         String MsgId = map.get("MsgId");
-//        String str = null;
-        if("text".equals(MsgType)){
+        if ("text".equals(MsgType)) {
             return testImamge(map);
-        }else if("event".equals(MsgType)){
+        } else if ("event".equals(MsgType)) {
             TextMessage message = new TextMessage();
-//
             message.setFromUserName(ToUserName);//原来【接收消息用户】变为回复时【发送消息用户】
-
             message.setToUserName(FromUserName);
-
             message.setMsgType("text");
-
             message.setCreateTime(System.currentTimeMillis());//创建当前时间为消息时间
-
-            if(map.get("EventKey").equals("nothing")){
+            if (map.get("EventKey").equals("nothing")) {
                 message.setContent("都说了啥都不是了！");
-            }else if(map.get("EventKey").equals("abountus")){
+            } else if (map.get("EventKey").equals("abountus")) {
                 message.setContent("us:我们；英[əs] 美[ʌs]！");
-            }else if(map.get("EventKey").equals("dontkown")){
+            } else if (map.get("EventKey").equals("dontkown")) {
                 message.setContent("i have no idea what to say！");
             }
-
             String str = MessageUtil.textMessageToXml(message); //调用Message工具类，将对象转为XML字符串
             return str;
-        }else{
+        } else {
             return "2";
         }
-
 //        if(MsgType.equals("text")){//判断消息类型是否是文本消息(text)
-//
 //            TextMessage message = new TextMessage();
-//
 //            message.setFromUserName(ToUserName);//原来【接收消息用户】变为回复时【发送消息用户】
-//
 //            message.setToUserName(FromUserName);
-//
 //            message.setMsgType("text");
-//
 //            message.setCreateTime(System.currentTimeMillis());//创建当前时间为消息时间
-//
 //            message.setContent("您好，"+FromUserName+"\n我是："+ToUserName
-//
 //                    +"\n您发送的消息类型为："+MsgType+"\n您发送的时间为"+ DateUtil.format(new Date(Long.parseLong(CreateTime)))
-//
 //                    +"\n我回复的时间为："+DateUtil.format(new Date())+"\n您发送的内容是"+Content);
-//
 //            str = MessageUtil.textMessageToXml(message); //调用Message工具类，将对象转为XML字符串
-//
 //        }
 //        System.out.println(str);
 //        return str;
     }
 
-    private String testImamge(Map<String, String> requestMap){
+    private String testImamge(Map<String, String> requestMap) {
         String respMessage = null;
-        try{
+        try {
 
             // 发送方帐号（open_id）
             String fromUserName = requestMap.get("FromUserName");
@@ -156,20 +135,20 @@ public class WeiXinApplicationController extends BaseController{
                     Article article1 = new Article();
                     article1.setTitle("我是一条多图文消息");
                     article1.setDescription("");
-                    article1.setPicUrl("http://www.isic.cn/viewResourcesAction//logo/20130913/2013091314543416032.jpg");
-                    article1.setUrl("www.baidu.com");
+                    article1.setPicUrl("https://bpic.588ku.com/original_pic/19/11/04/a17f9f7cd336ccb864de8e7a70d67489.jpg!/fw/252/quality/99/unsharp/true/compress/true");
+                    article1.setUrl("https://588ku.com/png-zt/4160.html");
 
                     Article article2 = new Article();
                     article2.setTitle("微信公众平台开发教程Java版（二）接口配置 ");
                     article2.setDescription("");
-                    article2.setPicUrl("http://www.isic.cn/viewResourcesAction//logo/20131021/2013102111243367254.jpg");
-                    article2.setUrl("www.baidu.com");
+                    article2.setPicUrl("http://imgm3.cnmo-img.com.cn/product_exhibit/15_120x90/643/ceUyv2x381ouI.jpg");
+                    article2.setUrl("http://product.cnmo.com/product/1624883_t999.html#p=4");
 
                     Article article3 = new Article();
                     article3.setTitle("微信公众平台开发教程Java版(三) 消息接收和发送");
                     article3.setDescription("");
-                    article3.setPicUrl("http://www.isic.cn/viewResourcesAction//logo/20131021/2013102111291287031.jpg");
-                    article3.setUrl("http://tuposky.iteye.com/blog/2017429");
+                    article3.setPicUrl("http://images-new.123rf.com.cn/450wm/dedivan1923/dedivan19231510/dedivan1923151000679/46784061-pretty-girl-sitting-in-street-with-morning-coffee-and-relaxing.jpg");
+                    article3.setUrl("https://www.123rf.com.cn/topic/136/1.html");
 
                     articleList.add(article1);
                     articleList.add(article2);
@@ -177,7 +156,7 @@ public class WeiXinApplicationController extends BaseController{
                     newsMessage.setArticleCount(articleList.size());
                     newsMessage.setArticles(articleList);
                     respMessage = MessageUtil.newsMessageToXml(newsMessage);
-                }else{
+                } else {
                     TextMessage message = new TextMessage();
 //
                     message.setFromUserName(toUserName);//原来【接收消息用户】变为回复时【发送消息用户】
@@ -188,7 +167,7 @@ public class WeiXinApplicationController extends BaseController{
 
                     message.setCreateTime(System.currentTimeMillis());//创建当前时间为消息时间
 
-                    message.setContent("你发送的内容是："+content);
+                    message.setContent("你发送的内容是：" + content);
                     respMessage = MessageUtil.textMessageToXml(message);
                 }
             }
@@ -196,7 +175,7 @@ public class WeiXinApplicationController extends BaseController{
             e.printStackTrace();
         }
         System.out.println(respMessage);
-		return respMessage;
+        return respMessage;
 
     }
 

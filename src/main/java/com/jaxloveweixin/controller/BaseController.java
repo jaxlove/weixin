@@ -7,6 +7,5 @@ import org.springframework.web.bind.annotation.RequestMapping;
  *
  * @author wdj on 2018/7/28
  */
-@RequestMapping("**.do")
 public class BaseController {
 }

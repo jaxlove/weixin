@@ -14,10 +14,8 @@ import java.io.IOException;
 
 public class WeiXinUtil {
     //从微信后台拿到APPID和APPSECRET 并封装为常量
-//    private static final String APPID = "wx5cbc586cab32f621";
-//    private static final String APPSECRET = "fd2f771413b0e638ffca29de554f9a52";
-    private static final String APPID = "wxd9607ded0e6d126d";
-    private static final String APPSECRET = "68b058594fa77def8f3b274f6b3a4f60";
+    private static final String APPID = "wx783d24219059d6d4";
+    private static final String APPSECRET = "6acb2c28fb7c89068f07fb3004bcf7ba";
     private static final String ACCESS_TOKEN_URL = "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=APPID&secret=APPSECRET";
     /**
      * 编写Get请求的方法。但没有参数传递的时候，可以使用Get请求
