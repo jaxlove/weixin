@@ -4,6 +4,6 @@ public interface MenuService {
 
     String createMenu(String jsonMenu);
 
-    String deleteMenu(String jsonMenu);
+    String deleteMenu();
 
 }

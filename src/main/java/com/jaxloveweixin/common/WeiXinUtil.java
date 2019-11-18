@@ -1,81 +1,84 @@
 package com.jaxloveweixin.common;
+
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.jaxloveweixin.info.AccessToken;
 import net.sf.json.JSONObject;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.util.EntityUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 public class WeiXinUtil {
+    public static Logger log = Logger.getLogger(WeiXinUtil.class);
+
     //从微信后台拿到APPID和APPSECRET 并封装为常量
     private static final String APPID = "wx783d24219059d6d4";
     private static final String APPSECRET = "6acb2c28fb7c89068f07fb3004bcf7ba";
     private static final String ACCESS_TOKEN_URL = "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=APPID&secret=APPSECRET";
-    /**
-     * 编写Get请求的方法。但没有参数传递的时候，可以使用Get请求
-     *
-     * @param url 需要请求的URL
-     * @return 将请求URL后返回的数据，转为JSON格式，并return
-     */
-    public static JSONObject doGetStr(String url) throws ClientProtocolException, IOException {
-        DefaultHttpClient client = new DefaultHttpClient();//获取DefaultHttpClient请求
-        HttpGet httpGet = new HttpGet(url);//HttpGet将使用Get方式发送请求URL
-        JSONObject jsonObject = null;
-        HttpResponse response = client.execute(httpGet);//使用HttpResponse接收client执行httpGet的结果
-        HttpEntity entity = response.getEntity();//从response中获取结果，类型为HttpEntity
-        if(entity != null){
-            String result = EntityUtils.toString(entity,"UTF-8");//HttpEntity转为字符串类型
-            jsonObject = JSONObject.fromObject(result);//字符串类型转为JSON类型
-        }
-        return jsonObject;
-    }
-
-    /**
-     * 编写Post请求的方法。当我们需要参数传递的时候，可以使用Post请求
-     *
-     * @param url 需要请求的URL
-     * @param outStr  需要传递的参数
-     * @return 将请求URL后返回的数据，转为JSON格式，并return
-     */
-    public static JSONObject doPostStr(String url,String outStr){
-        DefaultHttpClient client = new DefaultHttpClient();//获取DefaultHttpClient请求
-        HttpPost httpost = new HttpPost(url);//HttpPost将使用Get方式发送请求URL
-        JSONObject jsonObject = null;
-        httpost.setEntity(new StringEntity(outStr,"UTF-8"));//使用setEntity方法，将我们传进来的参数放入请求中
-        String result = null;//HttpEntity转为字符串类型
-        try {
-            HttpResponse response = client.execute(httpost);//使用HttpResponse接收client执行httpost的结果
-            result = EntityUtils.toString(response.getEntity(),"UTF-8");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        jsonObject = JSONObject.fromObject(result);//字符串类型转为JSON类型
-        return jsonObject;
-    }
+    private static final String CACHE_KEY = "accessToken";
+    //accessToken缓存，微信accessToken 120分钟过期，这里设置110分钟过期
+    private static Cache<String, AccessToken> tokenCache = CacheBuilder.newBuilder()
+            .expireAfterWrite(110L, TimeUnit.MINUTES)
+            .concurrencyLevel(6)
+            .initialCapacity(100)
+            .maximumSize(1000)
+            .softValues()
+            .build();
 
     /**
      * 获取AccessToken
+     *
      * @return 返回拿到的access_token及有效期
      */
     public static AccessToken getAccessToken() {
-        AccessToken token = new AccessToken();
-        String url = ACCESS_TOKEN_URL.replace("APPID", APPID).replace("APPSECRET", APPSECRET);//将URL中的两个参数替换掉
-        JSONObject jsonObject = null;//使用刚刚写的doGet方法接收结果
-        try {
-            jsonObject = doGetStr(url);
-        } catch (IOException e) {
-            e.printStackTrace();
+        AccessToken accessToken = tokenCache.getIfPresent(CACHE_KEY);
+        if (accessToken == null) {
+            synchronized (tokenCache) {
+                if (accessToken == null) {
+                    AccessToken token = new AccessToken();
+                    //将URL中的两个参数替换掉
+                    String url = ACCESS_TOKEN_URL.replace("APPID", APPID).replace("APPSECRET", APPSECRET);
+                    //使用刚刚写的doGet方法接收结果
+                    JSONObject jsonObject = null;
+                    try {
+                        jsonObject = HttpUtil.doGetStr(url);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    //如果返回不为空，将返回结果封装进AccessToken实体类
+                    if (jsonObject != null) {
+                        //取出access_token
+                        token.setToken(jsonObject.getString("access_token"));
+                        //取出access_token的有效期
+                        token.setExpiresIn(jsonObject.getInt("expires_in"));
+                        tokenCache.put(CACHE_KEY, token);
+                    }
+                }
+            }
         }
-        if(jsonObject!=null){ //如果返回不为空，将返回结果封装进AccessToken实体类
-            token.setToken(jsonObject.getString("access_token"));//取出access_token
-            token.setExpiresIn(jsonObject.getInt("expires_in"));//取出access_token的有效期
+        return tokenCache.getIfPresent(CACHE_KEY);
+    }
+
+    /**
+     * 0表示成功，其他值表示失败
+     *
+     * @param data
+     * @param url
+     * @return
+     */
+    public static JSONObject doPostWithToken(String data, String url) {
+        // 调用接口创建菜单
+        if (StringUtils.isNotBlank(url)) {
+            if (url.indexOf("?") > -1) {
+                url += "&access_token=" + getAccessToken().getToken();
+            } else {
+                url += "?access_token=" + getAccessToken().getToken();
+            }
         }
-        return token;
+        JSONObject jsonObject = HttpUtil.doPostStr(url, data);
+        return jsonObject;
+
     }
 }

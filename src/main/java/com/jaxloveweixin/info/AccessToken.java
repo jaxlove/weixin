@@ -8,7 +8,6 @@ package com.jaxloveweixin.info;
 public class AccessToken {
 
     private String token;
-
     private int expiresIn;
 
     public String getToken() {

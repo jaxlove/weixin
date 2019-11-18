@@ -2,6 +2,7 @@ package com.jaxloveweixin.controller;
 
 import com.jaxloveweixin.common.Constant;
 import com.jaxloveweixin.common.MessageUtil;
+import com.jaxloveweixin.common.MsgTypeEnum;
 import com.jaxloveweixin.entity.frommessage.CheckMessage;
 import com.jaxloveweixin.entity.frommessage.WeiXinCheck;
 import com.jaxloveweixin.entity.tomessage.Article;
@@ -27,7 +28,7 @@ import java.util.Map;
 public class WeiXinApplicationController extends BaseController {
 
     @ResponseBody
-    @GetMapping("weixin/getToken")
+    @GetMapping("weixin")
     public String getToken(CheckMessage checkMessage) {
         boolean checkSignature = WeiXinCheck.checkSignature(checkMessage);
         if (checkSignature) {
@@ -38,7 +39,7 @@ public class WeiXinApplicationController extends BaseController {
     }
 
     @ResponseBody
-    @PostMapping("weixin/getToken")
+    @PostMapping("weixin")
     public Object postToken(HttpServletRequest request) throws Exception {
         //从集合中，获取XML各个节点的内容
         Map<String, String> map = MessageUtil.parseXml(request);
@@ -48,9 +49,9 @@ public class WeiXinApplicationController extends BaseController {
         String MsgType = map.get("MsgType");
         String Content = map.get("Content");
         String MsgId = map.get("MsgId");
-        if ("text".equals(MsgType)) {
+        if (MsgTypeEnum.TEXT.getType().equals(MsgType)) {
             return testImamge(map);
-        } else if ("event".equals(MsgType)) {
+        } else if (MsgTypeEnum.EVENT.getType().equals(MsgType)) {
             TextMessage message = new TextMessage();
             message.setFromUserName(ToUserName);//原来【接收消息用户】变为回复时【发送消息用户】
             message.setToUserName(FromUserName);

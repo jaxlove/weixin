@@ -2,14 +2,13 @@ package com.jaxloveweixin.entity.frommessage;
 
 public class ImageMessage extends BaseMessage {
 
-    private String picUrl;
+    private String PicUrl;
 
     public String getPicUrl() {
-        return picUrl;
+        return PicUrl;
     }
 
     public void setPicUrl(String picUrl) {
-        this.picUrl = picUrl;
+        PicUrl = picUrl;
     }
-
 }
