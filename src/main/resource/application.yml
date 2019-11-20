@@ -4,7 +4,7 @@ server:
 
 spring:
   application:
-    name: jaxloveweixin
+    name: weixin
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: GMT+8
@@ -13,3 +13,8 @@ spring:
       enabled: true
       max-file-size: 50MB
       max-request-size: 500MB
+
+logging:
+  config: classpath:log.xml
+  level:
+    root: debug
