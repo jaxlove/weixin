@@ -36,7 +36,7 @@ public class TextMessageHandler implements MessageHandler {
                 article.setTitle("我是一条单图文消息");
                 article.setDescription("我是描述信息，哈哈哈哈哈哈哈。。。");
                 article.setPicUrl("https://mmbiz.qpic.cn/mmbiz_jpg/XHh0SksQZPNuhd2BU5yCtd3QflsHz1CF8vV8qYHUPiaaypuYh9jn3t5VNBVjbtplAHIWNkbJ7lQGw0tv9iaQibsEA/640?wx_fmt=jpeg");
-                article.setUrl("https://www.cnblogs.com/jaxlove-it");
+                article.setUrl("http://wdj.free.idcfengye.com/page/test.html");
                 articleList.add(article);
                 respMessage = WeiXinResponseUtil.newsMessage(receviceMessage, articleList);
             } else {
