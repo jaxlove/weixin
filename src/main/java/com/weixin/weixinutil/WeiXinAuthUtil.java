@@ -124,15 +124,13 @@ public class WeiXinAuthUtil {
         String currentTimeMillis = String.valueOf(System.currentTimeMillis());
         String substring = String.valueOf(Math.random()).substring(2);
         ApiTicket ticket = getTicket();
-        String[] arr = {url, currentTimeMillis,substring,ticket.getTicket()};
+        String[] arr = {"url="+url, "timestamp="+currentTimeMillis,"noncestr="+substring,"jsapi_ticket="+ticket.getTicket()};
         Arrays.sort(arr);
-        StringBuffer sb = new StringBuffer();
-        for (String s : arr) {
-            sb.append(s);
-        }
+        String join = StringUtils.join(arr, "&");
+        logger.info("signature:{}",join);
         String signature;
         try {
-            signature = SHA1Utils.shaEncode(sb.toString());
+            signature = SHA1Utils.shaEncode(join);
         } catch (Exception e) {
             return null;
         }

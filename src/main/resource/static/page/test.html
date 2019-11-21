@@ -14,19 +14,22 @@
 <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
 <script src="https://res.wx.qq.com/open/js/jweixin-1.4.0.js"></script>
 <script>
-    new Vue({
-        el: '#content',
-        data: {
-            message: 'Hello Vue!'
-        }
+    getData()
+    wx.ready(function () {
+        wx.checkJsApi({
+            jsApiList: ['chooseImage'], // 需要检测的JS接口列表，所有JS接口列表见附录2,
+            success: function(res) {
+                // 以键值对的形式返回，可用的api值true，不可用为false
+                // 如：{"checkResult":{"chooseImage":true},"errMsg":"checkJsApi:ok"}
+            }
+        });
+    })
+    wx.error(function () {
+        alert("微信sdk加载失败")
     })
 
-    $(function () {
-        getData()
-    })
 
     function getData() {
-        debugger
         var wxConfig;
         $.ajax({
             url:"/weixinInfo/jsSdk/sign",
@@ -34,6 +37,7 @@
                 wxConfig = res
                 wxConfig.debugger = true
                 wxConfig.jsApiList = ['scanQRCode']
+                wx.config(wxConfig);
             }
         })
     }
