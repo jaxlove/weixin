@@ -3,7 +3,6 @@ package com.weixin.weixinutil;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.weixin.common.HttpUtil;
-import com.weixin.common.SHA1Utils;
 import com.weixin.info.AccessToken;
 import com.weixin.info.ApiTicket;
 import com.weixin.util.Sha1Util;
@@ -14,9 +13,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 public class WeiXinAuthUtil {
@@ -25,10 +25,14 @@ public class WeiXinAuthUtil {
     //从微信后台拿到APPID和APPSECRET 并封装为常量
     private static final String APPID = "wx783d24219059d6d4";
     private static final String APPSECRET = "6acb2c28fb7c89068f07fb3004bcf7ba";
+
     private static final String ACCESS_TOKEN_URL = "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=APPID&secret=APPSECRET";
-    private static final String TICKET_URL = "https://api.weixin.qq.com/cgi-bin/ticket/getticket?access_token=ACCESS_TOKEN&type=jsapi";
-    private static final String TOKEN_CACHE_KEY = "accessToken";
-    private static final String TICKET_CACHE_KEY = "ticket";
+    private static final String JSAPI_TICKET_URL = "https://api.weixin.qq.com/cgi-bin/ticket/getticket?access_token=ACCESS_TOKEN&type=jsapi";
+    private static final String API_TICKET_URL = "https://api.weixin.qq.com/cgi-bin/ticket/getticket?access_token=ACCESS_TOKEN&type=wx_card";
+
+    private static final String TOKEN_CACHE_KEY = "accessjs_token";
+    private static final String JSAPI_TICKET_CACHE_KEY = "jsapi_ticket";
+    private static final String API_TICKET_CACHE_KEY = "api_ticket";
     //accessToken缓存，微信accessToken 120分钟过期，这里设置110分钟过期
     private static Cache<String, Object> weixinCache = CacheBuilder.newBuilder()
             .expireAfterWrite(110L, TimeUnit.MINUTES)
@@ -93,13 +97,13 @@ public class WeiXinAuthUtil {
 
     }
 
-    public static ApiTicket getTicket() {
-        ApiTicket apiTicket = (ApiTicket) weixinCache.getIfPresent(TICKET_CACHE_KEY);
+    public static ApiTicket getJsapiTicket() {
+        ApiTicket apiTicket = (ApiTicket) weixinCache.getIfPresent(JSAPI_TICKET_CACHE_KEY);
         if (apiTicket == null) {
-            synchronized (TICKET_CACHE_KEY) {
+            synchronized (JSAPI_TICKET_CACHE_KEY) {
                 if (apiTicket == null) {
                     ApiTicket ticket = new ApiTicket();
-                    String ticketUrl = TICKET_URL.replace("ACCESS_TOKEN", getAccessToken().getToken());
+                    String ticketUrl = JSAPI_TICKET_URL.replace("ACCESS_TOKEN", getAccessToken().getToken());
                     //使用刚刚写的doGet方法接收结果
                     JSONObject jsonObject = null;
                     try {
@@ -113,20 +117,65 @@ public class WeiXinAuthUtil {
                         ticket.setErrmsg(jsonObject.getString("errmsg"));
                         ticket.setErrcode(jsonObject.getInt("errcode"));
                         ticket.setExpiresIn(jsonObject.getInt("expires_in"));
-                        weixinCache.put(TICKET_CACHE_KEY, ticket);
+                        weixinCache.put(JSAPI_TICKET_CACHE_KEY, ticket);
                     }
                 }
             }
         }
-        return (ApiTicket) weixinCache.getIfPresent(TICKET_CACHE_KEY);
+        return (ApiTicket) weixinCache.getIfPresent(JSAPI_TICKET_CACHE_KEY);
+    }
+
+    public static ApiTicket getApiTicket() {
+        ApiTicket apiTicket = (ApiTicket) weixinCache.getIfPresent(API_TICKET_CACHE_KEY);
+        if (apiTicket == null) {
+            synchronized (API_TICKET_CACHE_KEY) {
+                if (apiTicket == null) {
+                    ApiTicket ticket = new ApiTicket();
+                    String ticketUrl = API_TICKET_URL.replace("ACCESS_TOKEN", getAccessToken().getToken());
+                    //使用刚刚写的doGet方法接收结果
+                    JSONObject jsonObject = null;
+                    try {
+                        jsonObject = HttpUtil.doGetStr(ticketUrl);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    //如果返回不为空，将返回结果封装进AccessToken实体类
+                    if (jsonObject != null) {
+                        ticket.setTicket(jsonObject.getString("ticket"));
+                        ticket.setErrmsg(jsonObject.getString("errmsg"));
+                        ticket.setErrcode(jsonObject.getInt("errcode"));
+                        ticket.setExpiresIn(jsonObject.getInt("expires_in"));
+                        weixinCache.put(API_TICKET_CACHE_KEY, ticket);
+                    }
+                }
+            }
+        }
+        return (ApiTicket) weixinCache.getIfPresent(API_TICKET_CACHE_KEY);
     }
 
     public static Map generateJsSdkSign(String url) throws Exception {
         Map map = new HashMap();
         String nonceStr = create_nonce_str();
         String currentTimeMillis = create_timestamp();
-        ApiTicket ticket = getTicket();
+        ApiTicket ticket = getJsapiTicket();
         String[] arr = {"jsapi_ticket=" + ticket.getTicket(), "noncestr=" + nonceStr, "timestamp=" + currentTimeMillis, "url=" + url};
+        String join = StringUtils.join(arr, "&");
+        logger.info("signature:{}", join);
+        String signature = Sha1Util.decode(join);
+        map.put("appId", APPID);
+        map.put("timestamp", currentTimeMillis);
+        map.put("jsapi_ticket", ticket.getTicket());
+        map.put("nonceStr", nonceStr);
+        map.put("signature", signature);
+        return map;
+    }
+
+    public static Map generateApiSign() throws UnsupportedEncodingException, NoSuchAlgorithmException {
+        Map map = new HashMap();
+        String nonceStr = create_nonce_str();
+        String currentTimeMillis = create_timestamp();
+        ApiTicket ticket = getJsapiTicket();
+        String[] arr = {"jsapi_ticket=" + ticket.getTicket(), "noncestr=" + nonceStr, "timestamp=" + currentTimeMillis};
         String join = StringUtils.join(arr, "&");
         logger.info("signature:{}", join);
         String signature = Sha1Util.decode(join);
