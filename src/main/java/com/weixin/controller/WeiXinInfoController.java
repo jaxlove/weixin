@@ -1,12 +1,11 @@
 package com.weixin.controller;
 
 import com.weixin.weixinutil.WeiXinAuthUtil;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.apache.commons.lang.StringUtils;
+import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
-import java.util.Enumeration;
+import java.io.UnsupportedEncodingException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 
 /**
@@ -19,13 +18,12 @@ import java.util.Map;
 public class WeiXinInfoController {
 
     @GetMapping("jsSdk/sign")
-    public Map getJsSdkSign(HttpServletRequest request){
-        Enumeration<String> headerNames = request.getHeaderNames();
-        while (headerNames.hasMoreElements()){
-            String s = headerNames.nextElement();
-            System.out.println(s+":"+request.getHeader(s));
+    public Map getJsSdkSign(String url) throws Exception {
+        if (StringUtils.isBlank(url)) {
+            return null;
         }
-        Map map = WeiXinAuthUtil.generateJsSdkSign("http://wdj.free.idcfengye.com/page/test.html");
+        url = url.split("#")[0];
+        Map map = WeiXinAuthUtil.generateJsSdkSign(url);
         return map;
     }
 

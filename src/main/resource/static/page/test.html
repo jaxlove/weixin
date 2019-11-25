@@ -3,53 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no">
-    <title>Title</title>
+    <title>扫一扫</title>
 </head>
 <body>
-    <div id="content">
-        <input type="button" onclick="scan()">
-    </div>
+<div id="content">
+    <input id="scanQRCode" type="button" value="扫一扫" onclick="getScan()">
+    <br/><br/>
+    <input type="button" value="选择图片" onclick="getPic()">
+</div>
 </body>
-<script src="/js/jquery-2.2.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.4.2.min.js"></script>
 <script src="https://res.wx.qq.com/open/js/jweixin-1.4.0.js"></script>
 <script>
+    var jsApiList = ['scanQRCode','chooseImage']
     getData()
     wx.ready(function () {
         wx.checkJsApi({
-            jsApiList: ['chooseImage'], // 需要检测的JS接口列表，所有JS接口列表见附录2,
+            jsApiList: jsApiList, // 需要检测的JS接口列表
             success: function(res) {
                 // 以键值对的形式返回，可用的api值true，不可用为false
                 // 如：{"checkResult":{"chooseImage":true},"errMsg":"checkJsApi:ok"}
             }
         });
-    })
+    });
     wx.error(function () {
         alert("微信sdk加载失败")
-    })
+    });
 
 
+    //所有需要使用JS-SDK的页面必须先注入配置信息，否则将无法调用
     function getData() {
         var wxConfig;
+        let data = {url:location.href}
         $.ajax({
             url:"/weixinInfo/jsSdk/sign",
+            data:data,
             success:function (res) {
                 wxConfig = res
                 wxConfig.debugger = true
-                wxConfig.jsApiList = ['scanQRCode']
+                wxConfig.jsApiList = jsApiList
                 wx.config(wxConfig);
             }
         })
     }
 
-    function scan() {
+    function getScan() {
         wx.scanQRCode({
-            needResult: 0, // 默认为0，扫描结果由微信处理，1则直接返回扫描结果，
+            needResult: 1, // 默认为0，扫描结果由微信处理，1则直接返回扫描结果，
             scanType: ["qrCode","barCode"], // 可以指定扫二维码还是一维码，默认二者都有
             success: function (res) {
                 var result = res.resultStr; // 当needResult 为 1 时，扫码返回的结果
+                console.log(res)
+                alert(result)
             }
         });
     }
+    
+    function getPic() {
+        wx.chooseImage({
+            count: 1, // 默认9
+            sizeType: ['original', 'compressed'], // 可以指定是原图还是压缩图，默认二者都有
+            sourceType: ['album', 'camera'], // 可以指定来源是相册还是相机，默认二者都有
+            success: function (res) {
+                var localIds = res.localIds; // 返回选定照片的本地ID列表，localId可以作为img标签的src属性显示图片
+                alert(res.localIds)
+            }
+        });
+    }
+
 </script>
 </html>

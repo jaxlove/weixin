@@ -38,7 +38,6 @@ public class WeiXinAcceptController extends BaseController {
         }
     }
 
-//    @LogDesc("接收微信消息")
     @PostMapping("weixin")
     public Object postToken(HttpServletRequest request) throws Exception {
         //从集合中，获取XML各个节点的内容

@@ -6,15 +6,17 @@ import com.weixin.common.HttpUtil;
 import com.weixin.common.SHA1Utils;
 import com.weixin.info.AccessToken;
 import com.weixin.info.ApiTicket;
+import com.weixin.util.Sha1Util;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.UnsupportedEncodingException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public class WeiXinAuthUtil {
@@ -24,7 +26,7 @@ public class WeiXinAuthUtil {
     private static final String APPID = "wx783d24219059d6d4";
     private static final String APPSECRET = "6acb2c28fb7c89068f07fb3004bcf7ba";
     private static final String ACCESS_TOKEN_URL = "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=APPID&secret=APPSECRET";
-    private static final String TICKET_URL = "https://api.weixin.qq.com/cgi-bin/ticket/getticket?access_token=ACCESS_TOKEN&type=wx_card";
+    private static final String TICKET_URL = "https://api.weixin.qq.com/cgi-bin/ticket/getticket?access_token=ACCESS_TOKEN&type=jsapi";
     private static final String TOKEN_CACHE_KEY = "accessToken";
     private static final String TICKET_CACHE_KEY = "ticket";
     //accessToken缓存，微信accessToken 120分钟过期，这里设置110分钟过期
@@ -119,25 +121,29 @@ public class WeiXinAuthUtil {
         return (ApiTicket) weixinCache.getIfPresent(TICKET_CACHE_KEY);
     }
 
-    public static Map generateJsSdkSign(String url) {
+    public static Map generateJsSdkSign(String url) throws Exception {
         Map map = new HashMap();
-        String currentTimeMillis = String.valueOf(System.currentTimeMillis());
-        String substring = String.valueOf(Math.random()).substring(2);
+        String nonceStr = create_nonce_str();
+        String currentTimeMillis = create_timestamp();
         ApiTicket ticket = getTicket();
-        String[] arr = {"url="+url, "timestamp="+currentTimeMillis,"noncestr="+substring,"jsapi_ticket="+ticket.getTicket()};
-        Arrays.sort(arr);
+        String[] arr = {"jsapi_ticket=" + ticket.getTicket(), "noncestr=" + nonceStr, "timestamp=" + currentTimeMillis, "url=" + url};
         String join = StringUtils.join(arr, "&");
-        logger.info("signature:{}",join);
-        String signature;
-        try {
-            signature = SHA1Utils.shaEncode(join);
-        } catch (Exception e) {
-            return null;
-        }
+        logger.info("signature:{}", join);
+        String signature = Sha1Util.decode(join);
         map.put("appId", APPID);
         map.put("timestamp", currentTimeMillis);
-        map.put("nonceStr", substring);
+        map.put("jsapi_ticket", ticket.getTicket());
+        map.put("nonceStr", nonceStr);
         map.put("signature", signature);
         return map;
+    }
+
+
+    private static String create_nonce_str() {
+        return UUID.randomUUID().toString();
+    }
+
+    private static String create_timestamp() {
+        return Long.toString(System.currentTimeMillis() / 1000);
     }
 }
